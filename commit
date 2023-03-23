@@ -1,0 +1,15 @@
+#!/bin/sh -e
+#
+# Expects a Git repo to be present in `notion`, and an extracted Notion export
+# to be present in `extracted`.
+#
+# This script will commit the new extracted export to the Git repo history.
+#
+
+mv notion notion-previous
+mv extracted notion
+mv notion-previous/.git notion
+cd notion
+git add .
+git commit --allow-empty-message -m ''
+rm -rf notion-previous

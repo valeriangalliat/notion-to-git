@@ -1,0 +1,44 @@
+#!/bin/sh -e
+#
+# Expects an `export.zip` file to be present, see `./export`.`
+#
+# Extracts it to an `extracted` directory.
+#
+
+mkdir extracted
+cd extracted
+unzip ../export.zip
+
+# We expect just one inner ZIP file?
+file=$(find . -mindepth 1 -maxdepth 1)
+
+if ! [ "$file" = ./Export-*.zip ]; then
+    echo 'Aborting' >&2
+    exit 1
+fi
+
+if which ditto > /dev/null; then
+    #
+    # On macOS use `ditto` because `unzip` chokes on UTF-8 otherwise.
+    # `-x` is for extract and `-k` for ZIP.
+    #
+    # See <https://github.com/CocoaPods/CocoaPods/issues/7711>.
+    #
+    ditto -xk "$file" .
+else
+    # On Linux `unzip` is fine
+    unzip "$file"
+fi
+
+rm "$file"
+
+# We expect just one directory to be created
+dir=$(find . -mindepth 1 -maxdepth 1)
+
+if ! [ "$dir" = ./Export-* ]; then
+    echo 'Aborting' >&2
+    exit 1
+fi
+
+mv "$dir"/* .
+rmdir "$dir"

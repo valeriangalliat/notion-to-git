@@ -1,0 +1,102 @@
+#!/bin/sh -e
+#
+# Runs a Notion export task and downloads the archive to `export.zip`.
+#
+
+if ! [ -f .env ]; then
+    echo 'Missing .env file' >&2
+    exit 1
+fi
+
+source .env
+
+#
+# Response looks like:
+#
+#     {
+#       "taskId": "efd11bfd-3198-429f-886c-46df485c5a0e"
+#     }
+#
+enqueue_task() {
+    curl 'https://www.notion.so/api/v3/enqueueTask' \
+        -X POST \
+        -H "content-type: application/json" \
+        -H "cookie: token_v2=$API_TOKEN" \
+        --data-raw "$TASK" \
+        --silent
+}
+
+#
+# Response looks like:
+#
+#     {
+#       "results": [
+#         {
+#           "id": "efd11bfd-3198-429f-886c-46df485c5a0e",
+#           "eventName": "exportSpace",
+#           "request": {
+#             "spaceId": "5a7d5717-cef3-417e-beca-94ef7ae851f4",
+#             "exportOptions": {
+#               "exportType": "markdown",
+#               "timeZone": "America/Toronto",
+#               "locale": "en"
+#             }
+#           },
+#           "actor": {
+#             "table": "notion_user",
+#             "id": "0728b049-d02b-41cf-9841-0cfdd867ee4a"
+#           },
+#           "state": "success",
+#           "rootRequest": {
+#             "eventName": "exportSpace",
+#             "requestId": "bb8d12bb-479d-4772-bd1a-8b8d47f62ca1"
+#           },
+#           "headers": {
+#             "ip": "1.2.3.4"
+#           },
+#           "equeuedAt": 1679597722462,
+#           "status": {
+#             "type": "progress|complete",
+#             "pagesExported": 1234,
+#             "exportURL": "url if complete"
+#           }
+#         }
+#       ]
+#     }
+#
+get_tasks() {
+    task_id=$1; shift
+
+    curl 'https://www.notion.so/api/v3/getTasks' \
+        -X POST \
+        -H "content-type: application/json" \
+        -H "cookie: token_v2=$API_TOKEN" \
+        --data-raw "{ \"taskIds\": [\"$task_id\"] }" \
+        --silent
+}
+
+poll() {
+    task_id=$1; shift
+
+    while :; do
+        sleep 2
+        status=$(get_tasks "$task_id" | jq '.results[0].status')
+        type=$(echo "$status" | jq -r .type)
+
+        if [ "$type" = complete ]; then
+            echo "$status" | jq -r .exportURL
+            echo >&2
+            return
+        fi
+
+        pages=$(echo "$status" | jq -r .pagesExported)
+        printf "\rPages: $pages" >&2
+    done
+}
+
+task_id=$(enqueue_task | jq -r .taskId)
+url=$(poll "$task_id")
+
+echo "Downloading: $url"
+
+curl "$url" -o export.zip -H "cookie: file_token=$FILE_TOKEN" --progress-bar
