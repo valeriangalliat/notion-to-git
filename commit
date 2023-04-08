@@ -12,5 +12,6 @@ mv notion-previous/.git notion
 cd notion
 git add .
 git commit --allow-empty-message -m ''
+git push
 cd ..
 rm -r notion-previous
