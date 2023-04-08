@@ -1,0 +1,2 @@
+all:
+	./export && ./extract && ./commit
