@@ -17,18 +17,7 @@ if ! [ "$file" = ./Export-*.zip ]; then
     exit 1
 fi
 
-if which ditto > /dev/null; then
-    #
-    # On macOS use `ditto` because `unzip` chokes on UTF-8 otherwise.
-    # `-x` is for extract and `-k` for ZIP.
-    #
-    # See <https://github.com/CocoaPods/CocoaPods/issues/7711>.
-    #
-    ditto -xk "$file" .
-else
-    # On Linux `unzip` is fine
-    unzip "$file"
-fi
+python3 ../unzip.py "$file"
 
 rm "$file"
 
