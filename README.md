@@ -18,14 +18,17 @@ git clone https://github.com/valeriangalliat/notion-to-git
 cd notion-to-git
 ```
 
-Go on [Notion](https://www.notion.so/), in **settings & members** >
-**settings**. Open the developer tools in the **network** tab. In
-Notion, click **export all workspace content** and run the export with
-the settings you want.
+Go on [Notion](https://www.notion.so/), in **Settings & members > Settings**.
+Open the developer tools in the **Network** tab. In Notion, click
+**Export all workspace content** and run the export with the settings
+you want.
 
 In the network tab, you'll see a request to `enqueueTask`. In the
 request payload you'll find a `spaceId` property. In the request
 **cookies** you'll find `token_v2` and `file_token`.
+
+If you don't find the `file_token`, check the **Storage** or
+**Application** tab for more cookies!
 
 With those 3 variables, create a `.env` file like so:
 
@@ -70,3 +73,12 @@ Then run the following commands:
 
 Feel free to add the remote of your choice to that Git repository and
 push it after those steps.
+
+## Refreshing the tokens
+
+If you need to refresh the tokens, go on Notion in your browser, and in
+the developer tools, go to the **Storage** or **Application** tab and
+list the cookies directly there.
+
+Check for `token_v2` and `file_token` and put them respectively in the
+`.env` file in `API_TOKEN` and `FILE_TOKEN`.

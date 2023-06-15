@@ -94,7 +94,14 @@ poll() {
     done
 }
 
-task_id=$(enqueue_task | jq -r .taskId)
+task=$(enqueue_task)
+task_id=$(echo "$task" | jq -r .taskId)
+
+if [ "$task_id" = null ]; then
+    echo "$task"
+    exit 1
+fi
+
 url=$(poll "$task_id")
 
 echo "Downloading: $url"
