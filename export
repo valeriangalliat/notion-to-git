@@ -80,7 +80,13 @@ poll() {
 
     while :; do
         sleep 2
-        status=$(get_tasks "$task_id" | jq '.results[0].status')
+        tasks_response=$(get_tasks "$task_id")
+
+        if [ -n "$DEBUG" ]; then
+            echo "$tasks_response" >&2
+        fi
+
+        status=$(echo "$tasks_response" | jq '.results[0].status')
         type=$(echo "$status" | jq -r .type)
 
         if [ "$type" = complete ]; then
@@ -95,6 +101,11 @@ poll() {
 }
 
 task=$(enqueue_task)
+
+if [ -n "$DEBUG" ]; then
+    echo "$task" >&2
+fi
+
 task_id=$(echo "$task" | jq -r .taskId)
 
 if [ "$task_id" = null ]; then

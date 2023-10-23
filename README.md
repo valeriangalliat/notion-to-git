@@ -44,7 +44,8 @@ TASK='{
         "exportType": "markdown",
         "timeZone": "America/Toronto",
         "locale": "en"
-      }
+      },
+      "shouldExportComments": false
     }
   }
 }'
@@ -82,3 +83,12 @@ list the cookies directly there.
 
 Check for `token_v2` and `file_token` and put them respectively in the
 `.env` file in `API_TOKEN` and `FILE_TOKEN`.
+
+## Debug mode
+
+If it doesn't work, you can try debug mode to inspect the full responses
+from the Notion API:
+
+```sh
+DEBUG=1 ./export
+```
