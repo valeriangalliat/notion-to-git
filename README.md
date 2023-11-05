@@ -84,6 +84,11 @@ list the cookies directly there.
 Check for `token_v2` and `file_token` and put them respectively in the
 `.env` file in `API_TOKEN` and `FILE_TOKEN`.
 
+It seems to matter that the token is _not_ URL encoded, e.g. `API_TOKEN`
+starts with `v02:user_token_or_cookies:` and not
+`v02%3Auser_token_or_cookies%3A`, and `FILE_TOEN` starts with `1:` and
+not `1%3A`.
+
 ## Debug mode
 
 If it doesn't work, you can try debug mode to inspect the full responses
