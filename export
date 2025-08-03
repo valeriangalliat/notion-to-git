@@ -10,6 +10,19 @@ fi
 
 source .env
 
+dcurl() {
+    url=$1; shift
+
+    if [ -n "$DEBUG" ]; then
+        result=$(curl "$url" "$@")
+        echo "> $url" >&2
+        echo "< $result" >&2
+        echo "$result"
+    else
+        curl "$url" "$@"
+    fi
+}
+
 #
 # Response looks like:
 #
@@ -18,7 +31,7 @@ source .env
 #     }
 #
 enqueue_task() {
-    curl 'https://www.notion.so/api/v3/enqueueTask' \
+    dcurl 'https://www.notion.so/api/v3/enqueueTask' \
         -X POST \
         -H "content-type: application/json" \
         -H "cookie: token_v2=$API_TOKEN" \
@@ -67,11 +80,22 @@ enqueue_task() {
 get_tasks() {
     task_id=$1; shift
 
-    curl 'https://www.notion.so/api/v3/getTasks' \
+    dcurl 'https://www.notion.so/api/v3/getTasks' \
         -X POST \
         -H "content-type: application/json" \
         -H "cookie: token_v2=$API_TOKEN" \
         --data-raw "{ \"taskIds\": [\"$task_id\"] }" \
+        --silent
+}
+
+get_user_tasks() {
+    space_id=$(echo "$TASK" | jq -r .task.request.spaceId)
+
+    dcurl 'https://www.notion.so/api/v3/getUserTasks' \
+        -X POST \
+        -H "content-type: application/json" \
+        -H "cookie: token_v2=$API_TOKEN" \
+        --data-raw "{ \"spaceId\": \"$space_id\" }" \
         --silent
 }
 
@@ -81,10 +105,6 @@ poll() {
     while :; do
         sleep 2
         tasks_response=$(get_tasks "$task_id")
-
-        if [ -n "$DEBUG" ]; then
-            echo "$tasks_response" >&2
-        fi
 
         status=$(echo "$tasks_response" | jq '.results[0].status')
         type=$(echo "$status" | jq -r .type)
@@ -100,19 +120,17 @@ poll() {
     done
 }
 
-task=$(enqueue_task)
+user_tasks=$(get_user_tasks)
+user_tasks_length=$(echo "$user_tasks" | jq '.taskIds | length')
 
-if [ -n "$DEBUG" ]; then
-    echo "$task" >&2
+if [ "$user_tasks_length" = 0 ]; then
+    # Discard output because now Notion instantly resolves the `exportSpace`
+    # task and creates new `partitionedExportSpace` tasks with different IDs.
+    enqueue_task > /dev/null
+    user_tasks=$(get_user_tasks)
 fi
 
-task_id=$(echo "$task" | jq -r .taskId)
-
-if [ "$task_id" = null ]; then
-    echo "$task"
-    exit 1
-fi
-
+task_id=$(echo "$user_tasks" | jq -r '.taskIds | first')
 url=$(poll "$task_id")
 
 echo "Downloading: $url"
